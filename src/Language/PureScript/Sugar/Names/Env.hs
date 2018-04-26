@@ -188,6 +188,12 @@ primExports :: Exports
 primExports = mkPrimExports primTypes primClasses primKinds
 
 -- |
+-- The exported types from the @Prim.Coerce@ module
+--
+primCoerceExports :: Exports
+primCoerceExports = mkPrimExports primCoerceTypes primCoerceClasses mempty
+
+-- |
 -- The exported types from the @Prim.Ordering@ module
 --
 primOrderingExports :: Exports
@@ -241,6 +247,9 @@ primEnv :: Env
 primEnv = M.fromList
   [ ( C.Prim
     , (internalModuleSourceSpan "<Prim>", nullImports, primExports)
+    )
+  , ( C.PrimCoerce
+    , (internalModuleSourceSpan "<Prim.Coerce>", nullImports, primCoerceExports)
     )
   , ( C.PrimOrdering
     , (internalModuleSourceSpan "<Prim.Ordering>", nullImports, primOrderingExports)

@@ -377,8 +377,9 @@ infer' v@(Constructor _ c) = do
   env <- getEnv
   case M.lookup c (dataConstructors env) of
     Nothing -> throwError . errorMessage . UnknownName . fmap DctorName $ c
-    Just (_, _, ty, _) -> do (v', ty') <- sndM (introduceSkolemScope <=< replaceAllTypeSynonyms) <=< instantiatePolyTypeWithUnknowns v $ ty
-                             return $ TypedValue True v' ty'
+    Just (_, _, ty, _) -> do
+      (v', ty') <- sndM (introduceSkolemScope <=< replaceAllTypeSynonyms) <=< instantiatePolyTypeWithUnknowns v $ ty
+      return $ TypedValue True v' ty'
 infer' (Case vals binders) = do
   (vals', ts) <- instantiateForBinders vals binders
   ret <- freshType

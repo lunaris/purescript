@@ -378,6 +378,14 @@ pattern Partial = Qualified (Just Prim) (ProperName "Partial")
 pattern Record :: Qualified (ProperName 'TypeName)
 pattern Record = Qualified (Just Prim) (ProperName "Record")
 
+-- Prim.Coercible
+
+pattern PrimCoerce :: ModuleName
+pattern PrimCoerce = ModuleName [ProperName "Prim", ProperName "Coerce"]
+
+pattern Coercible :: Qualified (ProperName 'ClassName)
+pattern Coercible = Qualified (Just PrimCoerce) (ProperName "Coercible")
+
 -- Prim.Ordering
 
 pattern PrimOrdering :: ModuleName
@@ -475,6 +483,9 @@ doc = "Doc"
 
 prim :: forall a. (IsString a) => a
 prim = "Prim"
+
+moduleCoerce :: forall a. (IsString a) => a
+moduleCoerce = "Coerce"
 
 moduleOrdering :: forall a. (IsString a) => a
 moduleOrdering = "Ordering"

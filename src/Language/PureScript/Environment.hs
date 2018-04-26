@@ -402,12 +402,19 @@ primTypes = M.fromList
 allPrimTypes :: M.Map (Qualified (ProperName 'TypeName)) (Kind, TypeKind)
 allPrimTypes = M.unions
   [ primTypes
+  , primCoerceTypes
   , primOrderingTypes
   , primRowTypes
   , primRowListTypes
   , primSymbolTypes
   , primTypeErrorTypes
   ]
+
+primCoerceTypes :: M.Map (Qualified (ProperName 'TypeName)) (Kind, TypeKind)
+primCoerceTypes =
+  M.fromList
+    [ (primSubName C.moduleCoerce "Coercible", (kindType -:> kindType -:> kindConstraint, ExternData))
+    ]
 
 primOrderingTypes :: M.Map (Qualified (ProperName 'TypeName)) (Kind, TypeKind)
 primOrderingTypes =
@@ -465,11 +472,21 @@ primClasses =
 allPrimClasses :: M.Map (Qualified (ProperName 'ClassName)) TypeClassData
 allPrimClasses = M.unions
   [ primClasses
+  , primCoerceClasses
   , primRowClasses
   , primRowListClasses
   , primSymbolClasses
   , primTypeErrorClasses
   ]
+
+primCoerceClasses :: M.Map (Qualified (ProperName 'ClassName)) TypeClassData
+primCoerceClasses =
+  M.fromList
+    [ (primSubName C.moduleCoerce "Coercible", makeTypeClassData
+        [ ("a", Just kindType)
+        , ("b", Just kindType)
+        ] [] [] [])
+    ]
 
 primRowClasses :: M.Map (Qualified (ProperName 'ClassName)) TypeClassData
 primRowClasses =
@@ -568,6 +585,21 @@ primTypeErrorClasses =
     , (primSubName C.typeError "Warn", makeTypeClassData
         [("message", Just kindDoc)] [] [] [])
     ]
+
+-- | Looks up a given name and, if it names a newtype, returns the names of the
+-- type's parameters, the type the newtype wraps and the names of the type's
+-- fields.
+lookupNewtypeConstructor :: Environment -> Qualified (ProperName 'TypeName) -> Maybe ([Text], Type, [Ident])
+lookupNewtypeConstructor env ty@(Qualified mn _) =
+  M.lookup ty (types env) >>= \case
+    (_, DataType tvs [(ctor, [wrappedTy])]) ->
+      M.lookup (Qualified mn ctor) (dataConstructors env) >>= \case
+        (Newtype, _, _, ids) ->
+          pure (map fst tvs, wrappedTy, ids)
+        _ ->
+          Nothing
+    _ ->
+      Nothing
 
 -- | Finds information about data constructors from the current environment.
 lookupConstructor :: Environment -> Qualified (ProperName 'ConstructorName) -> (DataDeclType, ProperName 'TypeName, Type, [Ident])

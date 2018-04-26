@@ -121,6 +121,25 @@ $(A.deriveJSON A.defaultOptions ''Type)
 $(A.deriveJSON A.defaultOptions ''Constraint)
 $(A.deriveJSON A.defaultOptions ''ConstraintData)
 
+-- | Split a type application into a function/constructor and a list of
+--   arguments.
+splitTypeApp :: Type -> Maybe (Type, [Type])
+splitTypeApp
+  = \case
+      TypeApp f x ->
+        go [x] f
+      _ ->
+        Nothing
+  where
+    go xs
+      = \case
+          TypeApp f x ->
+            go (x : xs) f
+          KindedType t _ ->
+            go xs t
+          f ->
+            Just (f, xs)
+
 -- | Convert a row to a list of pairs of labels and types
 rowToList :: Type -> ([(Label, Type)], Type)
 rowToList = go where
