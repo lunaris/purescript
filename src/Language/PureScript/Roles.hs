@@ -78,11 +78,13 @@ inferRoles env tyName
                       []
               in  concat (zipWith k t1Roles t2s)
             -- If the type is an application of any other type-level term, walk
-            -- the first term to determine what role contributions it makes
-            -- (e.g. in the case `data F a b = F (a (F a b))`, the use of `a` as
-            -- a function/constructor would trigger this case)
+            -- both the first and argument types to determine what role
+            -- contributions they make (e.g. in the case
+            -- `data F a b = F (a (G b))`, the use of `a` as a
+            -- function/constructor would trigger this case and both `a` and
+            -- `G b` would be walked recursively).
             _ ->
-              walk t1
+              walk t1 ++ foldMap walk t2s
       | otherwise =
           []
 

@@ -80,4 +80,13 @@ newtype RankN1 a b = RankN1 (forall r. r -> a)
 rankN1ToRankN1 :: RankN1 NTString1 Int -> RankN1 String Boolean
 rankN1ToRankN1 = coerce
 
+data Phantom2 a = Phantom
+
+data Maybe a = Nothing | Just a
+
+data G a b = G (a (Phantom2 b))
+
+gToG :: G Maybe Int -> G Maybe String
+gToG = coerce
+
 main = log (coerce (NTString1 "Done") :: String)
