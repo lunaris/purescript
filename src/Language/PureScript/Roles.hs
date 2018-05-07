@@ -10,9 +10,10 @@ import Prelude.Compat
 
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 
 import Language.PureScript.Environment
+import Language.PureScript.Kinds
 import Language.PureScript.Names
 import Language.PureScript.Types
 
@@ -35,18 +36,25 @@ inferRoles :: Environment -> Qualified (ProperName 'TypeName) -> [(Text, Role)]
 inferRoles env tyName
   | Just roles <- lookup tyName primRoles =
       roles
-  | Just (_, DataType tvs ctors) <- M.lookup tyName envTypes =
-      -- For each constructor the type has, walk its list of field types and
-      -- accumulate a list of (formal parameter name, role) pairs. Then, walk
-      -- the list of defined parameters, ensuring both that every parameter
-      -- appears (with a default role of phantom) and that they appear in the
-      -- right order.
+  | Just (_, DataType tvs ctors) <- envMeta =
+      -- A plain data type. For each constructor the type has, walk its list of
+      -- field types and accumulate a list of (formal parameter name, role)
+      -- pairs. Then, walk the list of defined parameters, ensuring both that
+      -- every parameter appears (with a default role of phantom) and that they
+      -- appear in the right order.
       let ctorRoles = foldMap (foldMap walk . snd) ctors
       in  map (\(tv, _) -> (tv, fromMaybe Phantom (lookup tv ctorRoles))) tvs
-  | otherwise
-      = []
+  | Just (k, ExternData) <- envMeta =
+      -- A foreign data type. Since the type will have no defined constructors
+      -- nor associated data types, infer the set of type parameters from its
+      -- kind and assume in the absence of role signatures that all such
+      -- parameters are representational.
+      rolesFromForeignTypeKind k
+  | otherwise =
+      []
   where
     envTypes = types env
+    envMeta = M.lookup tyName envTypes
     -- This function is named walk to match the specification given in the "Role
     -- inference" section of the paper "Safe Zero-cost Coercions for Haskell".
     walk (TypeVar v) =
@@ -87,6 +95,24 @@ inferRoles env tyName
               walk t1 ++ foldMap walk t2s
       | otherwise =
           []
+
+-- |
+-- Given the kind of a foreign type, generate a list of formal parameter names
+-- each tied to a `Representational` role which, in the absence of role
+-- signatures, provides the safest role signature which can be assigned to a
+-- type whose constructors are opaque to us.
+rolesFromForeignTypeKind :: Kind -> [(Text, Role)]
+rolesFromForeignTypeKind
+  = zipWith mkPair [0..] . go []
+  where
+    mkPair :: Int -> Kind -> (Text, Role)
+    mkPair i _k =
+      (pack ("a" ++ show i), Representational)
+    go acc = \case
+      FunKind k1 k2 ->
+        go (k2 : acc) k1
+      k ->
+        k : acc
 
 -- |
 -- A lookup table of role definitions for primitive types whose constructors

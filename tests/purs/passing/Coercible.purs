@@ -89,4 +89,9 @@ data G a b = G (a (Phantom2 b))
 gToG :: G Maybe Int -> G Maybe String
 gToG = coerce
 
+foreign import data Foreign1 :: Type -> Type -> Type
+
+foreign1ToForeign1 :: Foreign1 NTString1 (Phantom2 Int) -> Foreign1 String (Phantom2 Boolean)
+foreign1ToForeign1 = coerce
+
 main = log (coerce (NTString1 "Done") :: String)
