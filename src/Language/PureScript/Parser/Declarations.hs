@@ -38,6 +38,7 @@ import           Language.PureScript.Parser.Kinds
 import           Language.PureScript.Parser.Lexer
 import           Language.PureScript.Parser.Types
 import           Language.PureScript.PSString (PSString, mkString)
+import           Language.PureScript.Roles
 import           Language.PureScript.Types
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Expr as P
@@ -55,6 +56,17 @@ parseDataDeclaration = withSourceAnnF $ do
     indented *> equals
     P.sepBy1 ((,) <$> dataConstructorName <*> P.many (indented *> noWildcards parseTypeAtom)) pipe
   return $ \sa -> DataDeclaration sa dtype name tyArgs ctors
+
+parseRoleDeclaration :: TokenParser Declaration
+parseRoleDeclaration = withSourceAnnF $ do
+  name <- reserved "role" *> indented *> typeName
+  roles <- many (indented *> parseRole)
+  pure $ \sa -> RoleDeclaration (RoleDeclarationData sa name roles)
+
+parseRole :: TokenParser Role
+parseRole =
+  (reserved "representational" *> pure Representational) <|>
+  (reserved "phantom" *> pure Phantom)
 
 parseTypeDeclaration :: TokenParser Declaration
 parseTypeDeclaration = withSourceAnnF $ do
@@ -275,6 +287,7 @@ parseDeclaration :: TokenParser [Declaration]
 parseDeclaration =
   P.choice
     [ pure <$> parseDataDeclaration
+    , pure <$> parseRoleDeclaration
     , pure <$> parseTypeDeclaration
     , pure <$> parseTypeSynonymDeclaration
     , pure <$> parseValueDeclaration

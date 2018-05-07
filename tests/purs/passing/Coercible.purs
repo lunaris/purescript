@@ -94,4 +94,11 @@ foreign import data Foreign1 :: Type -> Type -> Type
 foreign1ToForeign1 :: Foreign1 NTString1 (Phantom2 Int) -> Foreign1 String (Phantom2 Boolean)
 foreign1ToForeign1 = coerce
 
+foreign import data Foreign2 :: Type -> Type -> Type
+
+role Foreign2 phantom representational
+
+foreign2ToForeign2 :: Foreign2 NTString2 (Phantom2 Int) -> Foreign2 Int (Phantom2 Boolean)
+foreign2ToForeign2 = coerce
+
 main = log (coerce (NTString1 "Done") :: String)
